@@ -101,9 +101,9 @@ app.all('*',(req,res,next)=>{
     res.status(404).json({status: statusHttp.ERROR, message:'this ressource is not available'});
 })
 
+app.use((req,res)=>(res.send(API is running )))
 
-
-console.log(process.env.PORT);
+console.log(process.env.PORT || 7666);
 
 app.listen(process.env.PORT,hostname, ()=>{
     console.log(`server running at http://:/`)

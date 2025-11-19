@@ -16,95 +16,77 @@ rstream.on('data',(chunk)=>{
     wstream.write(chunk)
 })*/
 
-require('dotenv').config()
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const path = require('path');
+
 const retraiteapis = require('./routes/retraiteroute');
 const statisticsapis = require('./routes/StatisticsRoute');
-const nodemailer = require("nodemailer");
-const cors = require('cors')
-const statusHttp = require('./utils/httpstatustext')
-const coursesapis = require('./routes/courseroute')
-const userapis = require('./routes/userroute')
-const contactapis = require('./routes/contactroute')
-const healthInsuranceapis = require('./routes/healthinsuranceroute')
-const carInsuranceapis= require('./routes/carInsuranceorute')
-const houseInsuranceapis = require('./routes/houseinsuranceroute')
-const express = require('express');
-const projectInsuranceapis = require('./routes/projectroute')
-const sinistreapis = require('./routes/sinistreroute')
-const url= process.env.DB_URL;
-console.log(url)
-const mongoose = require('mongoose');
-const path = require('path')
+const coursesapis = require('./routes/courseroute');
+const userapis = require('./routes/userroute');
+const contactapis = require('./routes/contactroute');
+const healthInsuranceapis = require('./routes/healthinsuranceroute');
+const carInsuranceapis = require('./routes/carInsuranceorute');
+const houseInsuranceapis = require('./routes/houseinsuranceroute');
+const projectInsuranceapis = require('./routes/projectroute');
+const sinistreapis = require('./routes/sinistreroute');
 const sendContractEmail = require('./utils/sendContractEmail'); 
 const userController = require('./controllers/usercontroller');
-mongoose.connect(url).then(()=> {
-    console.log("databaase connected successfully");
+const statusHttp = require('./utils/httpstatustext');
 
-    userController.updateInsurances();
+// ---------------- MONGODB ----------------
+mongoose.connect(process.env.DB_URL)
+    .then(() => {
+        console.log("Database connected successfully");
+        userController.updateInsurances();
+    })
+    .catch(err => console.log(err));
 
-})
-//cors npm package enabling calling the origins (api routes) from frontend without geting blocked
-const hostname = '127.0.0.1'
-const app = express()
+const app = express();
+
+// --------- CORS setup -----------
 app.use(cors({
     origin: ['http://localhost:3000', 'http://localhost:3001'],
-    optionsSuccessStatus: 200,
     credentials: true
 }));
-app.use('/uploads/avatar',express.static(path.join(__dirname,'uploads/avatar')));
-app.use('/uploads/car',express.static(path.join(__dirname,'uploads/car')));
-app.use('/uploads/house',express.static(path.join(__dirname,'uploads/house')));
-app.use('/uploads/health',express.static(path.join(__dirname,'uploads/health')));
-app.use('/uploads/sinistre',express.static(path.join(__dirname,'uploads/sinistre')));
-app.use('/uploads/projet/photo',express.static(path.join(__dirname,'uploads/projet/photo')))
-app.use('/uploads/projet/document',express.static(path.join(__dirname,'uploads/projet/document')))
-app.use('/uploads/contrat',express.static(path.join(__dirname,'uploads/contrat')))
 
-app.use('/uploads/retraite/extraitDeNaissance',express.static(path.join(__dirname,'uploads/retraite/extraitDeNaissance')))
-app.use('/uploads/retraite/preuveDActivite',express.static(path.join(__dirname,'uploads/retraite/preuveDActivite')))
-app.use('/uploads/retraite/cin',express.static(path.join(__dirname,'uploads/retraite/cin')))
+// ---------- STATIC FILES ----------
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// ---------- BODY PARSER ----------
+app.use(express.json());
 
-
-
-
-app.use(express.json())
-app.use('/api/courses',coursesapis);
-app.use('/api/users',userapis);
-app.use('/api/contact',contactapis)
-app.use('/api/houseInsurance',houseInsuranceapis)
-app.use('/api/projectInsurance',projectInsuranceapis);
-app.use('/api/carInsurance',carInsuranceapis)
-app.use('/api/healthInsurance',healthInsuranceapis)
-app.use('/api/sinistre',sinistreapis)
+// ---------- ROUTES ----------
+app.use('/api/courses', coursesapis);
+app.use('/api/users', userapis);
+app.use('/api/contact', contactapis);
+app.use('/api/houseInsurance', houseInsuranceapis);
+app.use('/api/projectInsurance', projectInsuranceapis);
+app.use('/api/carInsurance', carInsuranceapis);
+app.use('/api/healthInsurance', healthInsuranceapis);
+app.use('/api/sinistre', sinistreapis);
 app.use('/api/retraite', retraiteapis);
 app.use('/api/stats', statisticsapis);
 
-
-// Test email route
-app.get('/test-email', async (req, res, next) => {
-    try {
-        console.log('Test email endpoint hit');
-        const user = {
-            email: 'azizsmati44@gmail.com' // Replace with the actual recipient email
-        };
-        const filePath = path.join(__dirname, 'contracts', 'testfile.pdf'); // Ensure this file exists
-        await sendContractEmail(user, filePath);
-        res.json({ message: 'Test email sent successfully' });
-    } catch (error) {
-        console.error('Error in test-email route:', error);
-        next(error);
-    }
+// ---------- ROOT ROUTE ----------
+app.get('/', (req, res) => {
+    res.send("API is running successfully 🚀");
 });
 
-app.all('*',(req,res,next)=>{
-    res.status(404).json({status: statusHttp.ERROR, message:'this ressource is not available'});
-})
+// ---------- 404 HANDLER ----------
+app.all('*', (req, res) => {
+    res.status(404).json({
+        status: statusHttp.ERROR,
+        message: 'This resource is not available'
+    });
+});
 
+// ---------- SERVER ----------
+const PORT = process.env.PORT || 7666;
+const HOST = "0.0.0.0";  // REQUIRED FOR DEPLOYMENT
 
-
-console.log(process.env.PORT );
-
-app.listen(process.env.PORT,hostname, ()=>{
-    console.log(`server running at http://:/`)
-})
+app.listen(PORT, HOST, () => {
+    console.log(`Server running on http://${HOST}:${PORT}`);
+});
